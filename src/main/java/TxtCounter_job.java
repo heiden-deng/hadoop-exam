@@ -5,6 +5,9 @@ import exam6.SVGMap;
 import exam6.SVGMapEx;
 import exam6.SVGReducer;
 import exam6.SVGReducerEx;
+import join.AJoinMapper;
+import join.BJoinMapper;
+import join.JoinReducer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -18,7 +21,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.MultipleInputs;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.partition.InputSampler;
+import org.apache.hadoop.mapreduce.lib.partition.TotalOrderPartitioner;
 import org.mockito.internal.matchers.Null;
+import secondsort.IntPair;
+import secondsort.MyKeyGroupComparator;
+import secondsort.SecondMapper;
+import secondsort.SecondReducer;
 import task.*;
 import topn.Top10Mapper;
 import topn.Top10Reducer;
@@ -232,8 +241,107 @@ public class TxtCounter_job {
         }
     }
 
+    public static void TotalOrderSort(String input,String output){
+        Configuration conf = new Configuration();
+        try {
+            Job job = Job.getInstance(conf);
+            job.setJarByClass(TxtCounter_job.class);
+
+
+            InputSampler.RandomSampler<Text,Text> sampler = new InputSampler.RandomSampler<Text, Text>(0.1, 1000,10);
+            Path partitionFile = new Path("_partitions");
+            TotalOrderPartitioner.setPartitionFile(conf,partitionFile);
+
+
+            job.setMapperClass(Mapper.class);
+            job.setReducerClass(Reducer.class);
+            job.setPartitionerClass(TotalOrderPartitioner.class);
+            job.setSortComparatorClass(MySort.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(Text.class);
+            //job.setCombinerClass(WordCountReducer.class);
+            //job.setPartitionerClass(MyPartitioner.class);
+            job.setNumReduceTasks(3);
+
+            //Path path = new Path("sortoutput1");
+            InputSampler.writePartitionFile(job,sampler);
+
+            FileInputFormat.addInputPath(job,new Path(input));
+            FileOutputFormat.setOutputPath(job,new Path(output));
+            job.waitForCompletion(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void SecondSort(String input,String output){
+        Configuration conf = new Configuration();
+        try {
+            Job job = Job.getInstance(conf);
+            job.setJarByClass(TxtCounter_job.class);
+
+            job.setMapOutputKeyClass(IntPair.class);
+            job.setMapOutputValueClass(IntWritable.class);
+            job.setOutputKeyClass(IntWritable.class);
+            job.setOutputValueClass(IntWritable.class);
+
+            job.setMapperClass(SecondMapper.class);
+            job.setReducerClass(SecondReducer.class);
+            job.setGroupingComparatorClass(MyKeyGroupComparator.class);
+            job.setSortComparatorClass(MySort.class);
+            //job.setCombinerClass(WordCountReducer.class);
+            //job.setPartitionerClass(MyPartitioner.class);
+            job.setNumReduceTasks(1);
+
+            FileInputFormat.addInputPath(job,new Path(input));
+            FileOutputFormat.setOutputPath(job,new Path(output));
+            job.waitForCompletion(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void joinDemo(String input1,String input2,String output,String jointype){
+        Configuration conf = new Configuration();
+        try {
+            Job job = Job.getInstance(conf);
+            job.setJarByClass(TxtCounter_job.class);
+            job.getConfiguration().set("join.type",jointype);
+
+
+            MultipleInputs.addInputPath(job,new Path(input1),TextInputFormat.class, AJoinMapper.class);
+            MultipleInputs.addInputPath(job,new Path(input2),TextInputFormat.class, BJoinMapper.class);
+            job.setReducerClass(JoinReducer.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(Text.class);
+
+
+            //job.setCombinerClass(WordCountReducer.class);
+            //job.setPartitionerClass(MyPartitioner.class);
+            //job.setNumReduceTasks(1);
+
+            //FileInputFormat.addInputPath(job,new Path(input));
+            FileOutputFormat.setOutputPath(job,new Path(output));
+            job.waitForCompletion(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args){
-        CompleteSort(args[0],args[1]);
+        joinDemo(args[0],args[1],args[2],args[3]);
 
     }
 }
