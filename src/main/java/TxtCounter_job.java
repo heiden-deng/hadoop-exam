@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.partition.InputSampler;
 import org.apache.hadoop.mapreduce.lib.partition.TotalOrderPartitioner;
-import org.mockito.internal.matchers.Null;
+//import org.mockito.internal.matchers.Null;
 import secondsort.IntPair;
 import secondsort.MyKeyGroupComparator;
 import secondsort.SecondMapper;
