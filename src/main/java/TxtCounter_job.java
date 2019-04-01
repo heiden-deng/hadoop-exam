@@ -5,6 +5,9 @@ import exam6.SVGMap;
 import exam6.SVGMapEx;
 import exam6.SVGReducer;
 import exam6.SVGReducerEx;
+import inverseindex.InverseIndexCombier;
+import inverseindex.InverseIndexMapper;
+import inverseindex.InverseIndexReducer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -232,8 +235,38 @@ public class TxtCounter_job {
         }
     }
 
+    public static void InvertIndex(String input,String output){
+        Configuration conf = new Configuration();
+        try {
+            Job job = Job.getInstance(conf);
+            job.setJarByClass(TxtCounter_job.class);
+
+            job.setMapOutputKeyClass(Text.class);
+            job.setMapOutputValueClass(Text.class);
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(Text.class);
+
+            job.setMapperClass(InverseIndexMapper.class);
+            job.setReducerClass(InverseIndexReducer.class);
+            job.setCombinerClass(InverseIndexCombier.class);
+            //job.setCombinerClass(WordCountReducer.class);
+            //job.setPartitionerClass(MyPartitioner.class);
+            //job.setNumReduceTasks(3);
+
+            FileInputFormat.addInputPath(job,new Path(input));
+            FileOutputFormat.setOutputPath(job,new Path(output));
+            job.waitForCompletion(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args){
-        CompleteSort(args[0],args[1]);
+        InvertIndex(args[0],args[1]);
 
     }
 }
